@@ -162,10 +162,16 @@ class Application extends Container
         // Register Wordpress hooks
         $this->make(WordpressEventListener::class)->registerHooks();
 
-        // Register WordPress Admin hooks if in admin context
-        if (function_exists('is_admin') && is_admin()) {
-            $this->make(AdminDashboard::class)->register();
+        // Register WP-Cron hook and custom schedule filter
+        if (function_exists('add_filter')) {
+            add_filter('cron_schedules', [$this, 'registerCronSchedules']);
         }
+        if (function_exists('add_action')) {
+            add_action('headless_sync_cron_runner', [$this, 'runCronWorker']);
+        }
+
+        // Register WordPress Admin & Admin Bar hooks
+        $this->make(AdminDashboard::class)->register();
 
         $this->booted = true;
     }
@@ -194,6 +200,11 @@ class Application extends Container
         foreach ($this->modules as $module) {
             $module->activate();
         }
+
+        // Schedule the cron job
+        if (function_exists('wp_next_scheduled') && !wp_next_scheduled('headless_sync_cron_runner')) {
+            wp_schedule_event(time(), 'every_minute', 'headless_sync_cron_runner');
+        }
     }
 
     /**
@@ -206,6 +217,14 @@ class Application extends Container
         foreach ($this->modules as $module) {
             $module->deactivate();
         }
+
+        // Clear the cron job
+        if (function_exists('wp_next_scheduled')) {
+            $timestamp = wp_next_scheduled('headless_sync_cron_runner');
+            if ($timestamp) {
+                wp_unschedule_event($timestamp, 'headless_sync_cron_runner');
+            }
+        }
     }
 
     /**
@@ -217,6 +236,54 @@ class Application extends Container
     {
         foreach ($this->modules as $module) {
             $module->upgrade();
+        }
+    }
+
+    /**
+     * Register a custom every-minute schedule.
+     *
+     * @param array $schedules
+     * @return array
+     */
+    public function registerCronSchedules(array $schedules): array
+    {
+        $schedules['every_minute'] = [
+            'interval' => 60,
+            'display'  => __('Every Minute', 'headless-sync'),
+        ];
+        return $schedules;
+    }
+
+    /**
+     * Run the worker loop via WP-Cron.
+     *
+     * @return void
+     */
+    public function runCronWorker(): void
+    {
+        try {
+            // Check if daemon worker is currently running to avoid redundant processing
+            $pdo = $this->make(PDO::class);
+            $stmt = $pdo->query("
+                SELECT COUNT(*) FROM system.worker_heartbeats 
+                WHERE status IN ('idle', 'processing') 
+                  AND last_heartbeat_at > NOW() - INTERVAL '60 seconds'
+            ");
+            $activeDaemons = (int) $stmt->fetchColumn();
+
+            if ($activeDaemons > 0) {
+                return; // Daemon is already running, skip cron processing
+            }
+
+            // Run worker in non-blocking stop-when-empty mode
+            $worker = $this->make(\HSP\Core\Workers\WorkerEngine::class);
+            $worker->work('content', [
+                'max_jobs' => 100,
+                'max_runtime' => 50, // stop before next minute cron to prevent overlaps
+                'stop_when_empty' => true
+            ]);
+        } catch (\Throwable $e) {
+            // Suppress errors during background cron execution
         }
     }
 }

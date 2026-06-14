@@ -37,9 +37,18 @@ class AdminDashboard
      */
     public function register(): void
     {
-        add_action('admin_menu', [$this, 'addAdminMenu']);
-        add_action('admin_enqueue_scripts', [$this, 'enqueueAssets']);
-        add_action('admin_init', [$this, 'handleManualSync']);
+        if (function_exists('add_action')) {
+            if (is_admin()) {
+                add_action('admin_menu', [$this, 'addAdminMenu']);
+                add_action('admin_enqueue_scripts', [$this, 'enqueueAssets']);
+                add_action('admin_init', [$this, 'handleManualSync']);
+                add_action('admin_notices', [$this, 'displayAdminBarSyncNotice']);
+                add_action('admin_post_hsp_admin_bar_sync', [$this, 'handleAdminBarSync']);
+            }
+            
+            // Register Admin Bar button globally (for frontend and backend admin bar)
+            add_action('admin_bar_menu', [$this, 'addAdminBarButton'], 100);
+        }
     }
 
     /**
@@ -425,6 +434,110 @@ class AdminDashboard
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (Throwable $e) {
             return [];
+        }
+    }
+
+    /**
+     * Add sync button to the WordPress admin bar.
+     *
+     * @param \WP_Admin_Bar $wp_admin_bar
+     * @return void
+     */
+    public function addAdminBarButton($wp_admin_bar): void
+    {
+        if (!current_user_can('manage_options')) {
+            return;
+        }
+
+        $wp_admin_bar->add_node([
+            'id'    => 'hsp-sync-button',
+            'title' => '<span class="ab-icon dashicons dashicons-update" style="top:2px;"></span><span class="ab-label">HSP: Sync Now</span>',
+            'href'  => wp_nonce_url(admin_url('admin-post.php?action=hsp_admin_bar_sync'), 'hsp_admin_bar_sync_nonce'),
+            'meta'  => [
+                'title' => 'Sync Headless Outbox Queue Immediately',
+            ]
+        ]);
+    }
+
+    /**
+     * Handle manual sync triggered from the Admin Bar.
+     *
+     * @return void
+     */
+    public function handleAdminBarSync(): void
+    {
+        if (!current_user_can('manage_options')) {
+            wp_die(__('Unauthorized', 'headless-sync'));
+        }
+
+        check_admin_referer('hsp_admin_bar_sync_nonce');
+
+        try {
+            $worker = $this->app->make(WorkerEngine::class);
+            
+            // Run worker to process all pending jobs in the queue
+            $worker->work('content', [
+                'max_jobs' => 1000,
+                'max_runtime' => 30,
+                'stop_when_empty' => true
+            ]);
+
+            $referrer = wp_get_referer();
+            if ($referrer && strpos($referrer, 'wp-admin') !== false) {
+                // If clicked from an admin page, redirect back there
+                $referrer = remove_query_arg(['hsp_sync_status', 'hsp_sync_error'], $referrer);
+                $redirectUrl = add_query_arg(['hsp_sync_status' => 'success'], $referrer);
+            } else {
+                // If clicked from frontend, redirect to Headless Sync admin page to show metrics
+                $redirectUrl = add_query_arg(['hsp_sync_status' => 'success'], menu_page_url('headless-sync', false));
+            }
+            
+            wp_safe_redirect($redirectUrl);
+            exit;
+        } catch (Throwable $e) {
+            $referrer = wp_get_referer();
+            if ($referrer && strpos($referrer, 'wp-admin') !== false) {
+                $referrer = remove_query_arg(['hsp_sync_status', 'hsp_sync_error'], $referrer);
+                $redirectUrl = add_query_arg([
+                    'hsp_sync_status' => 'error',
+                    'hsp_sync_error' => urlencode($e->getMessage())
+                ], $referrer);
+            } else {
+                $redirectUrl = add_query_arg([
+                    'hsp_sync_status' => 'error',
+                    'hsp_sync_error' => urlencode($e->getMessage())
+                ], menu_page_url('headless-sync', false));
+            }
+            
+            wp_safe_redirect($redirectUrl);
+            exit;
+        }
+    }
+
+    /**
+     * Display a notice in the WordPress admin panel after manual sync is run.
+     *
+     * @return void
+     */
+    public function displayAdminBarSyncNotice(): void
+    {
+        if (!isset($_GET['hsp_sync_status'])) {
+            return;
+        }
+
+        if ($_GET['hsp_sync_status'] === 'success') {
+            ?>
+            <div class="notice notice-success is-dismissible">
+                <p><strong><?php _e('HSP Sync:', 'headless-sync'); ?></strong> <?php _e('Queue processed successfully. Outbox is up to date.', 'headless-sync'); ?></p>
+            </div>
+            <?php
+        } elseif ($_GET['hsp_sync_status'] === 'error') {
+            $error = isset($_GET['hsp_sync_error']) ? urldecode($_GET['hsp_sync_error']) : 'Unknown error';
+            ?>
+            <div class="notice notice-error is-dismissible">
+                <p><strong><?php _e('HSP Sync Failed:', 'headless-sync'); ?></strong> <?php echo esc_html($error); ?></p>
+            </div>
+            <?php
         }
     }
 }
