@@ -1,0 +1,23 @@
+# Composer packages
+/headless-sync/vendor/
+
+# Local Environment files
+.env
+.env.testing
+
+# Temporary Agent Folders
+.agents/
+
+# IDE/Editor files
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS files
+Thumbs.db
+ehthumbs.db
+Desktop.ini

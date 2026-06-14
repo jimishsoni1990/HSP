@@ -1,0 +1,22 @@
+{
+    "name": "hsp/headless-sync",
+    "description": "Headless Sync Platform E2E Testing Infrastructure",
+    "type": "project",
+    "require-dev": {
+        "phpunit/phpunit": "^9.5",
+        "guzzlehttp/guzzle": "^7.4",
+        "symfony/process": "^5.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "HSP\\Bootstrap\\": "bootstrap/",
+            "HSP\\Core\\": "core/",
+            "HSP\\Modules\\": "modules/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "HSP\\Tests\\EndToEnd\\": "tests/EndToEnd/"
+        }
+    }
+}

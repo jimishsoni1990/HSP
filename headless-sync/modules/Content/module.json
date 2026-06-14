@@ -1,0 +1,7 @@
+{
+    "name": "Content",
+    "version": "1.0.0",
+    "description": "WordPress Blog content domain module - handles Posts, Pages, and Categories sync",
+    "namespace": "HSP\\Modules\\Content",
+    "entry": "Module.php"
+}

@@ -1,0 +1,106 @@
+# Headless Sync Platform (HSP) — E2E Test Infrastructure
+
+This document describes the design, configuration, and execution instructions for the opaque-box End-to-End (E2E) testing suite.
+
+## E2E Testing Strategy
+
+The E2E test suite acts as an opaque-box validator. It treats the system as a black box and interacts with it only through public and administrative interfaces:
+1. **Triggers**: Actions are pushed through the WordPress REST API or WP-CLI (simulating editor actions).
+2. **Intermediate States**: Outbox events and queue jobs are verified by querying PostgreSQL `system.*` tables.
+3. **Execution**: The CLI Worker runner is executed programmatically using Symfony Process.
+4. **Outcomes**: Projections are verified via PostgreSQL `content.*` queries, and API response structures are asserted against REST Delivery API endpoints.
+
+```text
+       +-----------------------+
+       |   WordPress REST API  | <--- (1) Trigger (Post Created)
+       +-----------------------+
+                   |
+                   v (Event Builder writes to Postgres)
+       +-----------------------+
+       |   system.queue_jobs   | <--- (2) Assert job is 'queued'
+       +-----------------------+
+                   |
+                   v (Test runs "wp headless-sync worker run")
+       +-----------------------+
+       |    content.posts      | <--- (3) Assert DB Projection matches
+       +-----------------------+
+                   |
+                   v (API serves from PostgreSQL)
+       +-----------------------+
+       |   REST Delivery API   | <--- (4) Assert GET /api/v1/posts/{slug}
+       +-----------------------+
+```
+
+## Prerequisites
+
+1. **Docker Containers**: The test suite requires the local Docker containers to be running:
+   ```bash
+   docker-compose up -d
+   ```
+2. **Composer Dependencies**: Install development dependencies:
+   ```bash
+   composer install --dev
+   ```
+
+## Configuration
+
+Copy the sample environment file to configure E2E connections:
+```bash
+cp .env.testing.example .env.testing
+```
+
+The E2E runner requires the following environment variables (defined in `phpunit.xml.dist` or overridden in `.env.testing`):
+```ini
+# WordPress Configuration
+WP_URL=http://localhost:8080
+WP_DB_HOST=127.0.0.1
+WP_DB_PORT=3306
+WP_DB_USER=wordpress
+WP_DB_PASSWORD=wordpress_pass
+WP_DB_NAME=wordpress_db
+WP_ADMIN_USER=admin
+WP_ADMIN_APP_PASSWORD=abcd-efgh-ijkl-mnop
+
+# PostgreSQL Configuration
+PG_DB_HOST=127.0.0.1
+PG_DB_PORT=5432
+PG_DB_USER=hsp_admin
+PG_DB_PASSWORD=hsp_pass
+PG_DB_NAME=hsp_delivery
+
+# Delivery API Configuration
+DELIVERY_API_URL=http://localhost:9000
+```
+
+## Running the E2E Tests
+
+To execute the E2E test suite from the plugin directory `headless-sync/`:
+```bash
+./vendor/bin/phpunit --configuration tests/EndToEnd/phpunit.xml.dist
+```
+
+To run a specific test:
+```bash
+./vendor/bin/phpunit --configuration tests/EndToEnd/phpunit.xml.dist --filter SanityTest
+```
+
+## Test Suite Folder Structure
+
+The E2E tests live in the plugin directory under `headless-sync/tests/EndToEnd/`:
+- `BaseEndToEndTestCase.php`: Base class providing DB connections via PDO, Guzzle client setup, and WP-CLI execution utilities.
+- `Content/`: Focuses on validation of Content synchronization (Posts, Pages, Categories).
+- `Platform/`: Validates Outbox and Queue mechanics, worker retries, Dead Letter Queue (DLQ), and reconciliation logic.
+- `DeliveryApi/`: Validates REST API responses, routing, parameters, and composition endpoints.
+
+## Database Isolation & Cleanups
+
+To maintain database cleanliness:
+- **PostgreSQL**: The base class runs a truncation script before/after each test:
+  ```sql
+  TRUNCATE system.events, system.queue_jobs, system.dead_letter_jobs, system.audit_log, system.aggregate_versions CASCADE;
+  TRUNCATE content.posts, content.pages, content.taxonomies, content.entity_taxonomies, content.media CASCADE;
+  ```
+- **WordPress (MySQL)**: Any post, page, or term created via the REST API or WP-CLI during a test will be tracked by the base class and forcefully deleted in `tearDown()`:
+  ```bash
+  wp post delete <id> --force
+  ```

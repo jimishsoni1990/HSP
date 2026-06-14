@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.5/phpunit.xsd"
+         bootstrap="bootstrap.php"
+         colors="true"
+         verbose="true"
+         forceCoversAnnotation="false"
+         beStrictAboutTestsThatDoNotTestAnything="true"
+         beStrictAboutOutputDuringTests="true"
+         beStrictAboutTodoAnnotatedTests="true"
+         convertErrorsToExceptions="true"
+         convertNoticesToExceptions="true"
+         convertWarningsToExceptions="true"
+         processIsolation="false"
+         stopOnFailure="false">
+    <testsuites>
+        <testsuite name="E2E Content Suite">
+            <directory>Content</directory>
+        </testsuite>
+        <testsuite name="E2E Platform Suite">
+            <directory>Platform</directory>
+        </testsuite>
+        <testsuite name="E2E Delivery API Suite">
+            <directory>DeliveryApi</directory>
+        </testsuite>
+    </testsuites>
+
+    <php>
+        <!-- WordPress Configuration -->
+        <env name="WP_URL" value="http://localhost:8080"/>
+        <env name="WP_DB_HOST" value="127.0.0.1"/>
+        <env name="WP_DB_PORT" value="3306"/>
+        <env name="WP_DB_USER" value="wordpress_user"/>
+        <env name="WP_DB_PASSWORD" value="wordpress_password"/>
+        <env name="WP_DB_NAME" value="wordpress"/>
+        <env name="WP_ADMIN_USER" value="admin"/>
+        <env name="WP_ADMIN_APP_PASSWORD" value="VLz9nwhALMvAWbVoFTNHZXJY"/>
+
+        <!-- PostgreSQL Configuration -->
+        <env name="PG_DB_HOST" value="127.0.0.1"/>
+        <env name="PG_DB_PORT" value="5433"/>
+        <env name="PG_DB_USER" value="hsp_admin"/>
+        <env name="PG_DB_PASSWORD" value="hsp_secret"/>
+        <env name="PG_DB_NAME" value="hsp_delivery"/>
+
+        <!-- Delivery API Configuration -->
+        <env name="DELIVERY_API_URL" value="http://localhost:9000"/>
+    </php>
+</phpunit>

@@ -1,0 +1,112 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: hsp-mysql
+    command: --default-authentication-plugin=mysql_native_password
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "${MYSQL_USER}", "-p${MYSQL_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - hsp-network
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: hsp-postgres
+    restart: unless-stopped
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - hsp-network
+
+  wordpress:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hsp-wordpress
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      WORDPRESS_DB_HOST: mysql:3306
+      WORDPRESS_DB_USER: ${MYSQL_USER}
+      WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
+      WORDPRESS_DB_NAME: ${MYSQL_DATABASE}
+      HSP_DB_HOST: postgres
+      HSP_DB_PORT: 5432
+      HSP_DB_NAME: ${POSTGRES_DB}
+      HSP_DB_USER: ${POSTGRES_USER}
+      HSP_DB_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - wordpress_data:/var/www/html
+      - ./headless-sync:/var/www/html/wp-content/plugins/headless-sync
+    depends_on:
+      mysql:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    networks:
+      - hsp-network
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hsp-worker
+    restart: unless-stopped
+    environment:
+      WORDPRESS_DB_HOST: mysql:3306
+      WORDPRESS_DB_USER: ${MYSQL_USER}
+      WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
+      WORDPRESS_DB_NAME: ${MYSQL_DATABASE}
+      HSP_DB_HOST: postgres
+      HSP_DB_PORT: 5432
+      HSP_DB_NAME: ${POSTGRES_DB}
+      HSP_DB_USER: ${POSTGRES_USER}
+      HSP_DB_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - wordpress_data:/var/www/html
+      - ./headless-sync:/var/www/html/wp-content/plugins/headless-sync
+    depends_on:
+      mysql:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      wordpress:
+        condition: service_started
+    command: /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
+    networks:
+      - hsp-network
+
+networks:
+  hsp-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  postgres_data:
+  wordpress_data:
