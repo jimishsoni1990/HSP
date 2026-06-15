@@ -67,6 +67,15 @@ class AdminDashboard
             'dashicons-update',
             80
         );
+
+        add_submenu_page(
+            'headless-sync',
+            'API Playground',
+            'API Playground',
+            'manage_options',
+            'headless-sync-api',
+            [$this, 'renderApiPlayground']
+        );
     }
 
     /**
@@ -77,7 +86,7 @@ class AdminDashboard
      */
     public function enqueueAssets(string $hook): void
     {
-        if ($hook !== 'toplevel_page_headless-sync') {
+        if (strpos($hook, 'headless-sync') === false) {
             return;
         }
 
@@ -539,5 +548,299 @@ class AdminDashboard
             </div>
             <?php
         }
+    }
+
+    /**
+     * Render the API Playground tab/page.
+     *
+     * @return void
+     */
+    public function renderApiPlayground(): void
+    {
+        ?>
+        <div class="wrap hsp-dashboard">
+            <div class="hsp-header">
+                <h1>API Playground</h1>
+                <span class="hsp-status-badge connected">
+                    <span class="hsp-status-dot"></span> REST Delivery API
+                </span>
+            </div>
+
+            <div class="hsp-alert hsp-alert-info" style="background-color: #eff6ff; border-left: 4px solid #3b82f6; color: #1e3a8a; padding: 16px; border-radius: 12px; margin-bottom: 24px;">
+                <strong>API Endpoint Testing Console:</strong> Use this playground to execute queries directly against your REST Delivery API server and inspect the returned JSON payloads.
+            </div>
+
+            <!-- Base URL configuration -->
+            <div class="hsp-card" style="margin-bottom: 24px; padding: 20px; display: flex; align-items: center; gap: 16px; width: 100%; box-sizing: border-box;">
+                <div style="flex-grow: 1;">
+                    <label for="hsp-api-base-url" style="font-weight: 600; display: block; margin-bottom: 6px; font-size: 14px; color: #475569;">Delivery API Base URL</label>
+                    <input type="url" id="hsp-api-base-url" value="http://localhost:9000" style="width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; font-family: monospace;" placeholder="http://localhost:9000" />
+                </div>
+                <div style="margin-top: 22px;">
+                    <button id="hsp-test-connection" class="hsp-btn" style="height: 40px; padding: 0 20px; font-size: 14px; font-weight: 600; border-radius: 8px; border: none; cursor: pointer; transition: all 0.2s ease;">Test Connection</button>
+                </div>
+            </div>
+
+            <!-- Main Layout Grid -->
+            <div style="display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 24px;">
+                <!-- Endpoints Column -->
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                    <h2 style="font-size: 18px; font-weight: 700; margin: 0; color: #0f172a;">Available Endpoints</h2>
+
+                    <!-- Endpoints Loop -->
+                    <?php
+                    $endpoints = [
+                        [
+                            'title' => 'API Health Status',
+                            'method' => 'GET',
+                            'path' => '/',
+                            'description' => 'Verify that the Delivery API is online.',
+                            'params' => []
+                        ],
+                        [
+                            'title' => 'List All Published Posts',
+                            'method' => 'GET',
+                            'path' => '/api/v1/posts',
+                            'description' => 'Retrieve a list of all published blog posts (excluding drafts/deleted).',
+                            'params' => []
+                        ],
+                        [
+                            'title' => 'Get Post by Slug',
+                            'method' => 'GET',
+                            'path' => '/api/v1/posts',
+                            'description' => 'Query details of a single post by its URL slug.',
+                            'params' => [
+                                ['name' => 'slug', 'placeholder' => 'my-1st-post', 'value' => 'my-1st-post']
+                            ]
+                        ],
+                        [
+                            'title' => 'Filter Posts by Category Slug',
+                            'method' => 'GET',
+                            'path' => '/api/v1/posts',
+                            'description' => 'Get all published posts matching a specific category.',
+                            'params' => [
+                                ['name' => 'category', 'placeholder' => 'headless', 'value' => 'headless']
+                            ]
+                        ],
+                        [
+                            'title' => 'List All Published Pages',
+                            'method' => 'GET',
+                            'path' => '/api/v1/pages',
+                            'description' => 'Retrieve all synced pages.',
+                            'params' => []
+                        ],
+                        [
+                            'title' => 'Get Page by Slug',
+                            'method' => 'GET',
+                            'path' => '/api/v1/pages',
+                            'description' => 'Query details of a single static page by its slug.',
+                            'params' => [
+                                ['name' => 'slug', 'placeholder' => 'about', 'value' => 'about']
+                            ]
+                        ],
+                        [
+                            'title' => 'List All Active Categories',
+                            'method' => 'GET',
+                            'path' => '/api/v1/categories',
+                            'description' => 'Retrieve a list of all active categories.',
+                            'params' => []
+                        ],
+                        [
+                            'title' => 'Get Category by Slug',
+                            'method' => 'GET',
+                            'path' => '/api/v1/categories',
+                            'description' => 'Query details of a single category by its slug.',
+                            'params' => [
+                                ['name' => 'slug', 'placeholder' => 'headless', 'value' => 'headless']
+                            ]
+                        ]
+                    ];
+
+                    foreach ($endpoints as $idx => $ep): ?>
+                        <div class="hsp-card hsp-endpoint-card" data-path="<?php echo esc_attr($ep['path']); ?>" data-method="<?php echo esc_attr($ep['method']); ?>" style="padding: 20px;">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                                <div>
+                                    <span class="hsp-method-badge method-get" style="background-color: #dbeafe; color: #1e40af; padding: 4px 8px; border-radius: 6px; font-weight: 700; font-size: 12px; font-family: monospace; margin-right: 8px;"><?php echo esc_html($ep['method']); ?></span>
+                                    <strong style="font-size: 15px; color: #0f172a;"><?php echo esc_html($ep['title']); ?></strong>
+                                </div>
+                                <span style="font-family: monospace; font-size: 13px; color: #64748b; background-color: #f1f5f9; padding: 2px 8px; border-radius: 4px;"><?php echo esc_html($ep['path']); ?></span>
+                            </div>
+                            <p style="color: #64748b; margin: 0 0 16px 0; font-size: 13px;"><?php echo esc_html($ep['description']); ?></p>
+
+                            <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+                                <div style="display: flex; gap: 8px; flex-grow: 1;">
+                                    <?php foreach ($ep['params'] as $p): ?>
+                                        <div style="display: flex; align-items: center; gap: 6px; width: 100%; max-width: 280px;">
+                                            <span style="font-size: 12px; font-family: monospace; color: #94a3b8;"><?php echo esc_html($p['name']); ?>=</span>
+                                            <input type="text" 
+                                                   class="hsp-param-input" 
+                                                   data-param-name="<?php echo esc_attr($p['name']); ?>" 
+                                                   placeholder="<?php echo esc_attr($p['placeholder']); ?>" 
+                                                   value="<?php echo esc_attr($p['value']); ?>" 
+                                                   style="flex-grow: 1; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; font-family: monospace;" />
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                                <button class="hsp-btn hsp-run-btn" style="padding: 8px 16px; font-size: 13px; font-weight: 600;">Run Endpoint</button>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+
+                <!-- Response Column -->
+                <div>
+                    <h2 style="font-size: 18px; font-weight: 700; margin: 0 0 16px 0; color: #0f172a;">Response Console</h2>
+                    <div class="hsp-card" style="padding: 20px; position: sticky; top: 50px; min-height: 480px; display: flex; flex-direction: column;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 16px;">
+                            <div>
+                                <span id="hsp-resp-badge" class="hsp-status-badge" style="display: none; padding: 4px 10px; font-size: 12px;"></span>
+                                <span id="hsp-resp-url" style="font-family: monospace; font-size: 12px; color: #94a3b8; margin-left: 8px;">No request sent yet</span>
+                            </div>
+                            <button id="hsp-copy-btn" class="hsp-btn hsp-btn-secondary" style="padding: 6px 12px; font-size: 12px; font-weight: 600; display: none;">Copy JSON</button>
+                        </div>
+                        <div id="hsp-console-body" style="flex-grow: 1; overflow-y: auto; background-color: #0f172a; border-radius: 8px; border: 1px solid #1e293b; color: #38bdf8; padding: 16px; font-family: 'Courier New', Courier, monospace; font-size: 13px; line-height: 1.5; white-space: pre; max-height: 600px;">
+                            <div id="hsp-console-placeholder" style="color: #475569; text-align: center; margin-top: 180px;">
+                                Click "Run Endpoint" to inspect query output here.
+                            </div>
+                            <code id="hsp-console-code" style="color: #38bdf8; background: none; border: none; padding: 0; display: none; white-space: pre-wrap; word-break: break-all;"></code>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const baseUrlInput = document.getElementById('hsp-api-base-url');
+            const testConnBtn = document.getElementById('hsp-test-connection');
+            const runButtons = document.querySelectorAll('.hsp-run-btn');
+            
+            const respBadge = document.getElementById('hsp-resp-badge');
+            const respUrl = document.getElementById('hsp-resp-url');
+            const copyBtn = document.getElementById('hsp-copy-btn');
+            const consoleBody = document.getElementById('hsp-console-body');
+            const consoleCode = document.getElementById('hsp-console-code');
+            const placeholder = document.getElementById('hsp-console-placeholder');
+
+            // Format JSON with simple html/color highlight if needed, or just plain text
+            function updateConsole(text, isError = false, statusText = '') {
+                placeholder.style.display = 'none';
+                consoleCode.style.display = 'block';
+                consoleCode.textContent = text;
+                consoleCode.style.color = isError ? '#f87171' : '#38bdf8';
+                
+                if (statusText) {
+                    respBadge.style.display = 'inline-flex';
+                    respBadge.textContent = statusText;
+                    respBadge.className = 'hsp-status-badge ' + (isError ? 'disconnected' : 'connected');
+                } else {
+                    respBadge.style.display = 'none';
+                }
+            }
+
+            // Copy to clipboard
+            copyBtn.addEventListener('click', function() {
+                navigator.clipboard.writeText(consoleCode.textContent).then(function() {
+                    const originalText = copyBtn.textContent;
+                    copyBtn.textContent = 'Copied!';
+                    setTimeout(() => { copyBtn.textContent = originalText; }, 1500);
+                });
+            });
+
+            // Test Connection
+            testConnBtn.addEventListener('click', function() {
+                const baseUrl = baseUrlInput.value.replace(/\/$/, '');
+                testConnBtn.textContent = 'Connecting...';
+                testConnBtn.disabled = true;
+                
+                respUrl.textContent = baseUrl + '/';
+                updateConsole('Pinging API Server health check endpoint...', false, 'PINGING');
+
+                fetch(baseUrl + '/')
+                    .then(response => {
+                        if (!response.ok) throw new Error('HTTP status ' + response.status);
+                        return response.json();
+                    })
+                    .then(data => {
+                        testConnBtn.textContent = 'Connection OK!';
+                        testConnBtn.style.backgroundColor = '#059669';
+                        testConnBtn.style.color = '#ffffff';
+                        copyBtn.style.display = 'inline-block';
+                        updateConsole(JSON.stringify(data, null, 4), false, '200 OK');
+                        setTimeout(() => {
+                            testConnBtn.textContent = 'Test Connection';
+                            testConnBtn.removeAttribute('style');
+                        }, 2500);
+                    })
+                    .catch(err => {
+                        testConnBtn.textContent = 'Failed';
+                        testConnBtn.style.backgroundColor = '#dc2626';
+                        testConnBtn.style.color = '#ffffff';
+                        copyBtn.style.display = 'none';
+                        updateConsole('API Connection Failed.\n\nVerify that:\n1. The Delivery API server is running on the specified port (default: php -S localhost:9000 delivery-api.php).\n2. No CORS block exists.\n\nError: ' + err.message, true, 'ERROR');
+                        setTimeout(() => {
+                            testConnBtn.textContent = 'Test Connection';
+                            testConnBtn.removeAttribute('style');
+                        }, 2500);
+                    })
+                    .finally(() => {
+                        testConnBtn.disabled = false;
+                    });
+            });
+
+            // Run Endpoints
+            runButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const card = btn.closest('.hsp-endpoint-card');
+                    const path = card.getAttribute('data-path');
+                    const method = card.getAttribute('data-method');
+                    const baseUrl = baseUrlInput.value.replace(/\/$/, '');
+                    
+                    // Compile query parameters
+                    let queryParams = [];
+                    const inputs = card.querySelectorAll('.hsp-param-input');
+                    inputs.forEach(input => {
+                        const name = input.getAttribute('data-param-name');
+                        const val = input.value.trim();
+                        if (val) {
+                            queryParams.push(encodeURIComponent(name) + '=' + encodeURIComponent(val));
+                        }
+                    });
+
+                    let finalUrl = baseUrl + path;
+                    if (queryParams.length > 0) {
+                        finalUrl += '?' + queryParams.join('&');
+                    }
+
+                    // Set status
+                    respUrl.textContent = finalUrl;
+                    copyBtn.style.display = 'none';
+                    updateConsole('Sending ' + method + ' request to ' + finalUrl + '...', false, 'LOADING');
+
+                    fetch(finalUrl)
+                        .then(response => {
+                            const statusText = response.status + ' ' + response.statusText;
+                            if (!response.ok) {
+                                return response.text().then(text => {
+                                    throw { statusText, message: text };
+                                });
+                            }
+                            return response.json().then(json => ({ statusText, json }));
+                        })
+                        .then(({ statusText, json }) => {
+                            copyBtn.style.display = 'inline-block';
+                            updateConsole(JSON.stringify(json, null, 4), false, statusText);
+                        })
+                        .catch(err => {
+                            copyBtn.style.display = 'none';
+                            const errMsg = err.message || err.toString() || 'Unknown network error';
+                            const statusLabel = err.statusText || 'ERR_CONNECTION';
+                            updateConsole('Request failed.\n\nError Details:\n' + errMsg, true, statusLabel);
+                        });
+                });
+            });
+        });
+        </script>
+        <?php
     }
 }

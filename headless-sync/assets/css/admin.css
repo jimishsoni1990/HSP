@@ -277,3 +277,51 @@
     display: flex;
     gap: 12px;
 }
+
+/* API Playground Styles */
+.hsp-endpoint-card {
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    border: 1px solid #e2e8f0;
+}
+
+.hsp-endpoint-card:hover {
+    transform: translateY(-2px);
+    border-color: #3b82f6;
+    box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.08), 0 4px 6px -4px rgba(59, 130, 246, 0.08);
+}
+
+.hsp-method-badge {
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.hsp-method-badge.method-get {
+    background-color: #dbeafe !important;
+    color: #1e40af !important;
+    border: 1px solid #bfdbfe;
+}
+
+.hsp-param-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+#hsp-console-body::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+#hsp-console-body::-webkit-scrollbar-track {
+    background: #0f172a;
+}
+
+#hsp-console-body::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 4px;
+}
+
+#hsp-console-body::-webkit-scrollbar-thumb:hover {
+    background: #475569;
+}
+
