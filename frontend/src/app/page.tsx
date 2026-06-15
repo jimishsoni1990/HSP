@@ -68,7 +68,7 @@ export default async function Home() {
           {categories.map((cat) => (
             <Link
               key={cat.id}
-              href={`/categories/${cat.slug}`}
+              href={`/category/${cat.slug}`}
               className="text-xs font-semibold px-3 py-1.5 rounded-full bg-card-bg border border-card-border text-muted hover:border-accent hover:text-accent transition-all duration-200"
             >
               {cat.name}

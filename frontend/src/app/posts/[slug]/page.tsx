@@ -68,7 +68,7 @@ export default async function PostPage({ params }: PostPageProps) {
                 {post.categories.map((cat) => (
                   <Link
                     key={cat.id}
-                    href={`/categories/${cat.slug}`}
+                    href={`/category/${cat.slug}`}
                     className="text-xs font-semibold px-2.5 py-1 rounded-full bg-card-bg border border-card-border text-accent hover:border-accent transition-all duration-200"
                   >
                     {cat.name}

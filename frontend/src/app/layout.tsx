@@ -57,7 +57,7 @@ export default async function RootLayout({
                     {categories.slice(0, 3).map((cat) => (
                       <Link
                         key={cat.id}
-                        href={`/categories/${cat.slug}`}
+                        href={`/category/${cat.slug}`}
                         className="text-sm font-medium text-muted hover:text-accent transition-colors duration-200"
                       >
                         {cat.name}
