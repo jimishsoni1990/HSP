@@ -1,9 +1,34 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api";
+import type { Metadata } from "next";
 
 interface PostPageProps {
   params: Promise<{ slug: string }>;
+}
+
+export async function generateMetadata({ params }: PostPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const post = await api.getPostBySlug(slug);
+
+  if (!post) {
+    return {
+      title: "Post Not Found",
+    };
+  }
+
+  const seo = post.seo;
+
+  return {
+    title: seo?.meta_title || post.title,
+    description: seo?.meta_description || post.excerpt || undefined,
+    openGraph: {
+      title: seo?.og_title || seo?.meta_title || post.title,
+      description: seo?.og_description || seo?.meta_description || post.excerpt || undefined,
+      images: seo?.og_image ? [{ url: seo.og_image }] : [],
+      type: "article",
+    },
+  };
 }
 
 export default async function PostPage({ params }: PostPageProps) {

@@ -43,6 +43,7 @@ final class PostTransformer
             'status'       => $status,
             'deletedAt'    => $deletedAt,
             'categories'   => (array) ($payload['categories'] ?? []),
+            'seo'          => $payload['seo'] ?? null,
         ]);
     }
 }

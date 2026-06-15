@@ -34,6 +34,10 @@ class WordpressEventListener
         add_action('before_delete_post', [$this, 'handlePostDelete'], 10, 2);
         add_action('saved_category', [$this, 'handleCategorySave'], 10, 3);
         add_action('pre_delete_term', [$this, 'handleCategoryDelete'], 10, 2);
+
+        if (function_exists('add_filter')) {
+            add_filter('hsp_sync_post_seo_data', [$this, 'defaultSeoMapping'], 10, 3);
+        }
     }
 
     /**
@@ -97,11 +101,43 @@ class WordpressEventListener
             'categories' => $categories,
         ];
 
+        $seoData = [
+            'meta_title'       => '',
+            'meta_description' => '',
+            'og_title'         => '',
+            'og_description'   => '',
+            'og_image'         => '',
+        ];
+        if (function_exists('apply_filters')) {
+            $seoData = apply_filters('hsp_sync_post_seo_data', $seoData, $postId, $post);
+        }
+        $postData['seo'] = $seoData;
+
         try {
             $this->outbox->publishPost($postData, $eventType);
         } catch (\Throwable $e) {
             // Log/handle error
         }
+    }
+
+    /**
+     * Default callback to extract SEO data from Yoast SEO if active.
+     *
+     * @param array $seoData
+     * @param int $postId
+     * @param mixed $post
+     * @return array
+     */
+    public function defaultSeoMapping(array $seoData, int $postId, $post): array
+    {
+        if (function_exists('get_post_meta')) {
+            $seoData['meta_title']       = get_post_meta($postId, '_yoast_wpseo_title', true) ?: '';
+            $seoData['meta_description'] = get_post_meta($postId, '_yoast_wpseo_metadesc', true) ?: '';
+            $seoData['og_title']         = get_post_meta($postId, '_yoast_wpseo_opengraph-title', true) ?: '';
+            $seoData['og_description']   = get_post_meta($postId, '_yoast_wpseo_opengraph-description', true) ?: '';
+            $seoData['og_image']         = get_post_meta($postId, '_yoast_wpseo_opengraph-image', true) ?: '';
+        }
+        return $seoData;
     }
 
     /**

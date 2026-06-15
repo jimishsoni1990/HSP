@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS content.posts (
     excerpt            TEXT,
     content            TEXT,
     status             VARCHAR(50),
+    seo                JSONB,
     created_at         TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at         TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     deleted_at         TIMESTAMP WITH TIME ZONE
@@ -60,6 +61,7 @@ CREATE TABLE IF NOT EXISTS content.pages (
     slug               VARCHAR(200),
     title              TEXT,
     status             VARCHAR(50),
+    seo                JSONB,
     created_at         TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at         TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     deleted_at         TIMESTAMP WITH TIME ZONE

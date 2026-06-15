@@ -35,6 +35,7 @@ final class PageTransformer
             'title'        => (string) ($payload['post_title'] ?? ''),
             'status'       => $status,
             'deletedAt'    => $deletedAt,
+            'seo'          => $payload['seo'] ?? null,
         ]);
     }
 }

@@ -1,9 +1,34 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api";
+import type { Metadata } from "next";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const page = await api.getPageBySlug(slug);
+
+  if (!page) {
+    return {
+      title: "Page Not Found",
+    };
+  }
+
+  const seo = page.seo;
+
+  return {
+    title: seo?.meta_title || page.title,
+    description: seo?.meta_description || undefined,
+    openGraph: {
+      title: seo?.og_title || seo?.meta_title || page.title,
+      description: seo?.og_description || seo?.meta_description || undefined,
+      images: seo?.og_image ? [{ url: seo.og_image }] : [],
+      type: "website",
+    },
+  };
 }
 
 export default async function StaticPage({ params }: PageProps) {

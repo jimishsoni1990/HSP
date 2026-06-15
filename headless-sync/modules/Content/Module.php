@@ -78,6 +78,14 @@ class Module implements ModuleInterface
             $sql = file_get_contents($migrationFile);
             $this->pdo->exec($sql);
         }
+
+        // Run schema updates for existing installations
+        try {
+            $this->pdo->exec("ALTER TABLE content.posts ADD COLUMN IF NOT EXISTS seo JSONB;");
+            $this->pdo->exec("ALTER TABLE content.pages ADD COLUMN IF NOT EXISTS seo JSONB;");
+        } catch (\Throwable $e) {
+            // Ignore if driver doesn't support ADD COLUMN IF NOT EXISTS
+        }
     }
 
     /**
@@ -126,11 +134,13 @@ class Module implements ModuleInterface
         $stmt->execute(['id' => $postId]);
         $postUuid = $stmt->fetchColumn();
 
+        $seo = $post->getSeo() ? json_encode($post->getSeo()) : null;
+
         if (!$postUuid) {
             $postUuid = EventBuilder::generateUuidV7();
             $stmt = $this->pdo->prepare("
-                INSERT INTO content.posts (id, source_post_id, source_entity_type, slug, title, excerpt, content, status, deleted_at, created_at, updated_at)
-                VALUES (:uuid, :id, :type, :slug, :title, :excerpt, :content, :status, :deleted_at, NOW(), NOW())
+                INSERT INTO content.posts (id, source_post_id, source_entity_type, slug, title, excerpt, content, status, seo, deleted_at, created_at, updated_at)
+                VALUES (:uuid, :id, :type, :slug, :title, :excerpt, :content, :status, :seo, :deleted_at, NOW(), NOW())
             ");
             $stmt->execute([
                 'uuid' => $postUuid,
@@ -141,12 +151,13 @@ class Module implements ModuleInterface
                 'excerpt' => $excerpt,
                 'content' => $content,
                 'status' => $status,
+                'seo' => $seo,
                 'deleted_at' => $deletedAt
             ]);
         } else {
             $stmt = $this->pdo->prepare("
                 UPDATE content.posts
-                SET slug = :slug, title = :title, excerpt = :excerpt, content = :content, status = :status, deleted_at = :deleted_at, updated_at = NOW()
+                SET slug = :slug, title = :title, excerpt = :excerpt, content = :content, status = :status, seo = :seo, deleted_at = :deleted_at, updated_at = NOW()
                 WHERE id = :uuid
             ");
             $stmt->execute([
@@ -156,6 +167,7 @@ class Module implements ModuleInterface
                 'excerpt' => $excerpt,
                 'content' => $content,
                 'status' => $status,
+                'seo' => $seo,
                 'deleted_at' => $deletedAt
             ]);
         }
@@ -225,11 +237,13 @@ class Module implements ModuleInterface
         $stmt->execute(['id' => $pageId]);
         $pageUuid = $stmt->fetchColumn();
 
+        $seo = $page->getSeo() ? json_encode($page->getSeo()) : null;
+
         if (!$pageUuid) {
             $pageUuid = EventBuilder::generateUuidV7();
             $stmt = $this->pdo->prepare("
-                INSERT INTO content.pages (id, source_post_id, source_entity_type, slug, title, status, deleted_at, created_at, updated_at)
-                VALUES (:uuid, :id, :type, :slug, :title, :status, :deleted_at, NOW(), NOW())
+                INSERT INTO content.pages (id, source_post_id, source_entity_type, slug, title, status, seo, deleted_at, created_at, updated_at)
+                VALUES (:uuid, :id, :type, :slug, :title, :status, :seo, :deleted_at, NOW(), NOW())
             ");
             $stmt->execute([
                 'uuid' => $pageUuid,
@@ -238,12 +252,13 @@ class Module implements ModuleInterface
                 'slug' => $slug,
                 'title' => $title,
                 'status' => $status,
+                'seo' => $seo,
                 'deleted_at' => $deletedAt
             ]);
         } else {
             $stmt = $this->pdo->prepare("
                 UPDATE content.pages
-                SET slug = :slug, title = :title, status = :status, deleted_at = :deleted_at, updated_at = NOW()
+                SET slug = :slug, title = :title, status = :status, seo = :seo, deleted_at = :deleted_at, updated_at = NOW()
                 WHERE id = :uuid
             ");
             $stmt->execute([
@@ -251,6 +266,7 @@ class Module implements ModuleInterface
                 'slug' => $slug,
                 'title' => $title,
                 'status' => $status,
+                'seo' => $seo,
                 'deleted_at' => $deletedAt
             ]);
         }

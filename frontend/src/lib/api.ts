@@ -21,6 +21,13 @@ export interface Post {
   created_at: string;
   updated_at: string;
   categories?: Category[];
+  seo?: {
+    meta_title?: string;
+    meta_description?: string;
+    og_title?: string;
+    og_description?: string;
+    og_image?: string;
+  };
 }
 
 export interface Page {
@@ -33,6 +40,13 @@ export interface Page {
   status: string;
   created_at: string;
   updated_at: string;
+  seo?: {
+    meta_title?: string;
+    meta_description?: string;
+    og_title?: string;
+    og_description?: string;
+    og_image?: string;
+  };
 }
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_DELIVERY_API_URL || 'http://127.0.0.1:9000';

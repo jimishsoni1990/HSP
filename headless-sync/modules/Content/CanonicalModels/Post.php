@@ -46,6 +46,9 @@ class Post implements CanonicalModelInterface
     /** @var array<int|string> Associated category source IDs. */
     protected array $categories;
 
+    /** @var array|null Extensible SEO metadata. */
+    protected ?array $seo;
+
     /** @var int Aggregate version for optimistic concurrency. */
     protected int $aggregateVersion;
 
@@ -80,6 +83,7 @@ class Post implements CanonicalModelInterface
         $this->updatedAt        = $properties['updatedAt'] ?? null;
         $this->deletedAt        = $properties['deletedAt'] ?? null;
         $this->categories       = (array) ($properties['categories'] ?? []);
+        $this->seo              = $properties['seo'] ?? null;
         $this->aggregateVersion = (int) ($properties['aggregateVersion'] ?? 1);
     }
 
@@ -143,6 +147,11 @@ class Post implements CanonicalModelInterface
         return $this->categories;
     }
 
+    public function getSeo(): ?array
+    {
+        return $this->seo;
+    }
+
     // ── CanonicalModelInterface ─────────────────────────────────────────
 
     /**
@@ -162,6 +171,7 @@ class Post implements CanonicalModelInterface
             'updatedAt'        => $this->updatedAt,
             'deletedAt'        => $this->deletedAt,
             'categories'       => $this->categories,
+            'seo'              => $this->seo,
             'aggregateVersion' => $this->aggregateVersion,
         ];
     }

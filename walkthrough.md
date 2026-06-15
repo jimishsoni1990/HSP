@@ -159,3 +159,15 @@ We have successfully launched and verified the entire decoupled blog platform:
    - **2 posts** (`Hello world!`, `My 1st Post`) synced to PostgreSQL.
 5. **Next.js Frontend**: Started `next dev` on `http://localhost:3000/`.
 6. **E2E Visual Verification**: Tested page endpoints, homepage grid, categories navigation, and dynamic pages, which all return `200 OK` and render the block-rendered content perfectly.
+
+---
+
+## 🔍 Extensible SEO Metadata Synchronization
+
+We implemented a plug-and-play SEO metadata sync engine using the **Bridge Adapter Pattern** via standard WordPress filters:
+
+1. **WordPress Hook (`hsp_sync_post_seo_data`)**: Exposed a filter that allows the payload schema to be populated dynamically.
+2. **Default Yoast SEO Mapping**: Added a default listener that automatically detects and extracts Yoast SEO post meta keys (e.g. meta title, meta description, and open graph details) from `wp_postmeta`.
+3. **Flexible PostgreSQL Schema**: Altered the `content.posts` and `content.pages` tables in PostgreSQL to add `seo JSONB` columns, enabling flexible query projections without core schema changes.
+4. **Next.js Dynamic Headers**: Integrated Next.js App Router `generateMetadata()` in both dynamic post routes (`posts/[slug]`) and static page routes (`pages/[slug]`). This reads the parsed JSONB fields and outputs crawler-friendly `<title>`, `<meta name="description">`, and Open Graph tags during server rendering.
+5. **E2E Verification**: Confirmed the Delivery API JSON payload contains the mapped `seo` keys and that the Next.js HTML output includes the resolved tags in the `<head>`.
