@@ -49,6 +49,9 @@ class Post implements CanonicalModelInterface
     /** @var array|null Extensible SEO metadata. */
     protected ?array $seo;
 
+    /** @var string Featured image URL. */
+    protected string $featuredImageUrl;
+
     /** @var int Aggregate version for optimistic concurrency. */
     protected int $aggregateVersion;
 
@@ -84,6 +87,7 @@ class Post implements CanonicalModelInterface
         $this->deletedAt        = $properties['deletedAt'] ?? null;
         $this->categories       = (array) ($properties['categories'] ?? []);
         $this->seo              = $properties['seo'] ?? null;
+        $this->featuredImageUrl = (string) ($properties['featuredImageUrl'] ?? '');
         $this->aggregateVersion = (int) ($properties['aggregateVersion'] ?? 1);
     }
 
@@ -152,6 +156,11 @@ class Post implements CanonicalModelInterface
         return $this->seo;
     }
 
+    public function getFeaturedImageUrl(): string
+    {
+        return $this->featuredImageUrl;
+    }
+
     // ── CanonicalModelInterface ─────────────────────────────────────────
 
     /**
@@ -172,6 +181,7 @@ class Post implements CanonicalModelInterface
             'deletedAt'        => $this->deletedAt,
             'categories'       => $this->categories,
             'seo'              => $this->seo,
+            'featuredImageUrl' => $this->featuredImageUrl,
             'aggregateVersion' => $this->aggregateVersion,
         ];
     }

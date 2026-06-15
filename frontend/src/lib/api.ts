@@ -28,6 +28,7 @@ export interface Post {
   created_at: string;
   updated_at: string;
   categories?: Category[];
+  featured_image_url?: string;
   seo?: {
     meta_title?: string;
     meta_description?: string;

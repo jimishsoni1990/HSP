@@ -44,6 +44,7 @@ final class PostTransformer
             'deletedAt'    => $deletedAt,
             'categories'   => (array) ($payload['categories'] ?? []),
             'seo'          => $payload['seo'] ?? null,
+            'featuredImageUrl' => (string) ($payload['featured_image_url'] ?? ''),
         ]);
     }
 }

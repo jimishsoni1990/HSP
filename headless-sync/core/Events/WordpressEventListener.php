@@ -80,6 +80,11 @@ class WordpressEventListener
             $categories = wp_get_post_categories($postId);
         }
 
+        $featuredImageUrl = '';
+        if (function_exists('get_the_post_thumbnail_url')) {
+            $featuredImageUrl = get_the_post_thumbnail_url($postId, 'large') ?: '';
+        }
+
         $postData = [
             'ID' => $postId,
             'post_author' => $post->post_author,
@@ -100,6 +105,7 @@ class WordpressEventListener
             'post_type' => $post->post_type,
             'post_mime_type' => $post->post_mime_type,
             'categories' => $categories,
+            'featured_image_url' => $featuredImageUrl,
         ];
 
         $seoData = [

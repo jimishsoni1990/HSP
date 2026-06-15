@@ -82,6 +82,7 @@ class Module implements ModuleInterface
         // Run schema updates for existing installations
         try {
             $this->pdo->exec("ALTER TABLE content.posts ADD COLUMN IF NOT EXISTS seo JSONB;");
+            $this->pdo->exec("ALTER TABLE content.posts ADD COLUMN IF NOT EXISTS featured_image_url TEXT;");
             $this->pdo->exec("ALTER TABLE content.pages ADD COLUMN IF NOT EXISTS seo JSONB;");
             $this->pdo->exec("ALTER TABLE content.taxonomies ADD COLUMN IF NOT EXISTS seo JSONB;");
         } catch (\Throwable $e) {
@@ -136,12 +137,13 @@ class Module implements ModuleInterface
         $postUuid = $stmt->fetchColumn();
 
         $seo = $post->getSeo() ? json_encode($post->getSeo()) : null;
+        $featuredImageUrl = $post->getFeaturedImageUrl();
 
         if (!$postUuid) {
             $postUuid = EventBuilder::generateUuidV7();
             $stmt = $this->pdo->prepare("
-                INSERT INTO content.posts (id, source_post_id, source_entity_type, slug, title, excerpt, content, status, seo, deleted_at, created_at, updated_at)
-                VALUES (:uuid, :id, :type, :slug, :title, :excerpt, :content, :status, :seo, :deleted_at, NOW(), NOW())
+                INSERT INTO content.posts (id, source_post_id, source_entity_type, slug, title, excerpt, content, status, seo, featured_image_url, deleted_at, created_at, updated_at)
+                VALUES (:uuid, :id, :type, :slug, :title, :excerpt, :content, :status, :seo, :featured_image, :deleted_at, NOW(), NOW())
             ");
             $stmt->execute([
                 'uuid' => $postUuid,
@@ -153,12 +155,13 @@ class Module implements ModuleInterface
                 'content' => $content,
                 'status' => $status,
                 'seo' => $seo,
+                'featured_image' => $featuredImageUrl,
                 'deleted_at' => $deletedAt
             ]);
         } else {
             $stmt = $this->pdo->prepare("
                 UPDATE content.posts
-                SET slug = :slug, title = :title, excerpt = :excerpt, content = :content, status = :status, seo = :seo, deleted_at = :deleted_at, updated_at = NOW()
+                SET slug = :slug, title = :title, excerpt = :excerpt, content = :content, status = :status, seo = :seo, featured_image_url = :featured_image, deleted_at = :deleted_at, updated_at = NOW()
                 WHERE id = :uuid
             ");
             $stmt->execute([
@@ -169,6 +172,7 @@ class Module implements ModuleInterface
                 'content' => $content,
                 'status' => $status,
                 'seo' => $seo,
+                'featured_image' => $featuredImageUrl,
                 'deleted_at' => $deletedAt
             ]);
         }

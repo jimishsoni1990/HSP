@@ -84,6 +84,17 @@ export default async function PostPage({ params }: PostPageProps) {
         </h1>
       </div>
 
+      {/* Featured Image */}
+      {post.featured_image_url && (
+        <div className="relative h-[360px] w-full rounded-xl overflow-hidden border border-card-border shadow-lg">
+          <img
+            src={post.featured_image_url}
+            alt={post.title}
+            className="w-full h-full object-cover"
+          />
+        </div>
+      )}
+
       {/* Article Excerpt */}
       {post.excerpt && (
         <p className="text-lg text-muted font-light leading-relaxed border-l-2 border-accent pl-4 italic">

@@ -81,32 +81,43 @@ export default async function Home() {
       {featuredPost && (
         <div className="glass-card overflow-hidden group">
           <Link href={`/posts/${featuredPost.slug}`} className="block">
-            <div className="p-6 sm:p-10 space-y-4">
-              <div className="flex items-center gap-4 text-xs text-muted">
-                <span>
-                  {new Date(featuredPost.created_at).toLocaleDateString(undefined, {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
-                </span>
-                {featuredPost.categories && featuredPost.categories.length > 0 && (
-                  <>
-                    <span className="text-card-border">•</span>
-                    <span className="text-accent font-semibold">
-                      {featuredPost.categories[0].name}
-                    </span>
-                  </>
-                )}
-              </div>
-              <h2 className="text-2xl sm:text-4xl font-display font-bold group-hover:text-accent transition-colors duration-200">
-                {featuredPost.title}
-              </h2>
-              <p className="text-muted leading-relaxed text-sm sm:text-base line-clamp-3">
-                {featuredPost.excerpt || "Read the full article..."}
-              </p>
-              <div className="pt-4 flex items-center gap-2 text-accent font-semibold text-sm group-hover:gap-4 transition-all duration-200">
-                Read Article <span>→</span>
+            <div className="grid grid-cols-1 md:grid-cols-12">
+              {featuredPost.featured_image_url && (
+                <div className="md:col-span-5 relative h-64 md:h-full min-h-[260px] overflow-hidden">
+                  <img
+                    src={featuredPost.featured_image_url}
+                    alt={featuredPost.title}
+                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                </div>
+              )}
+              <div className={featuredPost.featured_image_url ? "p-6 sm:p-10 space-y-4 md:col-span-7 flex flex-col justify-center" : "p-6 sm:p-10 space-y-4 md:col-span-12"}>
+                <div className="flex items-center gap-4 text-xs text-muted">
+                  <span>
+                    {new Date(featuredPost.created_at).toLocaleDateString(undefined, {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}
+                  </span>
+                  {featuredPost.categories && featuredPost.categories.length > 0 && (
+                    <>
+                      <span className="text-card-border">•</span>
+                      <span className="text-accent font-semibold">
+                        {featuredPost.categories[0].name}
+                      </span>
+                    </>
+                  )}
+                </div>
+                <h2 className="text-2xl sm:text-4xl font-display font-bold group-hover:text-accent transition-colors duration-200">
+                  {featuredPost.title}
+                </h2>
+                <p className="text-muted leading-relaxed text-sm sm:text-base line-clamp-3">
+                  {featuredPost.excerpt || "Read the full article..."}
+                </p>
+                <div className="pt-4 flex items-center gap-2 text-accent font-semibold text-sm group-hover:gap-4 transition-all duration-200">
+                  Read Article <span>→</span>
+                </div>
               </div>
             </div>
           </Link>
@@ -120,30 +131,41 @@ export default async function Home() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {gridPosts.map((post) => (
               <article key={post.id} className="glass-card overflow-hidden group flex flex-col justify-between">
-                <Link href={`/posts/${post.slug}`} className="block p-6 space-y-3 flex-grow">
-                  <div className="flex items-center gap-3 text-xs text-muted">
-                    <span>
-                      {new Date(post.created_at).toLocaleDateString(undefined, {
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </span>
-                    {post.categories && post.categories.length > 0 && (
-                      <>
-                        <span className="text-card-border">•</span>
-                        <span className="text-accent font-semibold">
-                          {post.categories[0].name}
-                        </span>
-                      </>
-                    )}
+                <Link href={`/posts/${post.slug}`} className="block flex-grow">
+                  {post.featured_image_url && (
+                    <div className="relative h-48 overflow-hidden">
+                      <img
+                        src={post.featured_image_url}
+                        alt={post.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    </div>
+                  )}
+                  <div className="p-6 space-y-3">
+                    <div className="flex items-center gap-3 text-xs text-muted">
+                      <span>
+                        {new Date(post.created_at).toLocaleDateString(undefined, {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </span>
+                      {post.categories && post.categories.length > 0 && (
+                        <>
+                          <span className="text-card-border">•</span>
+                          <span className="text-accent font-semibold">
+                            {post.categories[0].name}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                    <h4 className="text-xl font-display font-bold group-hover:text-accent transition-colors duration-200 line-clamp-2">
+                      {post.title}
+                    </h4>
+                    <p className="text-muted text-sm line-clamp-3 leading-relaxed">
+                      {post.excerpt || "Read more details..."}
+                    </p>
                   </div>
-                  <h4 className="text-xl font-display font-bold group-hover:text-accent transition-colors duration-200 line-clamp-2">
-                    {post.title}
-                  </h4>
-                  <p className="text-muted text-sm line-clamp-3 leading-relaxed">
-                    {post.excerpt || "Read more details..."}
-                  </p>
                 </Link>
                 <div className="px-6 pb-6 pt-0">
                   <Link
