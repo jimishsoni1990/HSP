@@ -135,7 +135,7 @@ A premium admin dashboard was added to the WordPress admin panel for live monito
 | M4: Content Domain Module | ✅ DONE |
 | M5: REST Delivery API | ✅ DONE |
 | M6: Final Verification | ✅ DONE |
-| M7: Git Deployment | ⏳ PLANNED |
+| M7: Git Deployment | ✅ DONE |
 
 ### 🌐 REST Delivery API Index Collections
 
@@ -146,6 +146,16 @@ Added standard collection listing support to the Delivery API endpoints when que
 
 ---
 
-## Next Steps
+## 🚀 Decoupled Frontend Launch & Backfill Verification
 
-1. Git commit and push to GitHub repository (Milestone M7).
+We have successfully launched and verified the entire decoupled blog platform:
+
+1. **Dockerized Database**: The PostgreSQL instance is active on port `5433` (external) within Docker.
+2. **WordPress Core**: The local WordPress site at `http://hsp.local/` is running on port `10040`.
+3. **REST Delivery API**: Launched on `127.0.0.1:9000` (IPv4 loopback) with the custom `php.ini` loading `pdo_pgsql` and `mysqli`.
+4. **Outbox Backfill**: Executed a manual sync script to push existing WordPress categories, posts, and pages to the outbox and process them:
+   - **2 categories** (`Headless`, `Uncategorized`) synced to PostgreSQL.
+   - **2 pages** (`My 1st Page`, `Sample Page`) synced to PostgreSQL.
+   - **2 posts** (`Hello world!`, `My 1st Post`) synced to PostgreSQL.
+5. **Next.js Frontend**: Started `next dev` on `http://localhost:3000/`.
+6. **E2E Visual Verification**: Tested page endpoints, homepage grid, categories navigation, and dynamic pages, which all return `200 OK` and render the block-rendered content perfectly.
