@@ -52,6 +52,10 @@ if ($uri === 'api/v1/posts') {
         $stmt->execute(['post_id' => $post['id']]);
         $post['categories'] = $stmt->fetchAll();
 
+        if (isset($post['seo']) && is_string($post['seo'])) {
+            $post['seo'] = json_decode($post['seo'], true);
+        }
+
         header("Content-Type: application/json");
         echo json_encode($post);
         exit;
@@ -87,6 +91,9 @@ if ($uri === 'api/v1/posts') {
     $posts = $stmt->fetchAll();
 
     foreach ($posts as &$post) {
+        if (isset($post['seo']) && is_string($post['seo'])) {
+            $post['seo'] = json_decode($post['seo'], true);
+        }
         $stmtCat = $pdo->prepare("
             SELECT t.* FROM content.taxonomies t
             JOIN content.entity_taxonomies et ON t.id = et.taxonomy_id
@@ -116,6 +123,10 @@ if ($uri === 'api/v1/pages') {
             exit;
         }
 
+        if (isset($page['seo']) && is_string($page['seo'])) {
+            $page['seo'] = json_decode($page['seo'], true);
+        }
+
         header("Content-Type: application/json");
         echo json_encode($page);
         exit;
@@ -124,6 +135,12 @@ if ($uri === 'api/v1/pages') {
     // List all published pages
     $stmt = $pdo->query("SELECT * FROM content.pages WHERE deleted_at IS NULL AND status = 'publish' ORDER BY created_at DESC");
     $pages = $stmt->fetchAll();
+
+    foreach ($pages as &$page) {
+        if (isset($page['seo']) && is_string($page['seo'])) {
+            $page['seo'] = json_decode($page['seo'], true);
+        }
+    }
 
     header("Content-Type: application/json");
     echo json_encode($pages);
