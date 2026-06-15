@@ -83,6 +83,7 @@ class Module implements ModuleInterface
         try {
             $this->pdo->exec("ALTER TABLE content.posts ADD COLUMN IF NOT EXISTS seo JSONB;");
             $this->pdo->exec("ALTER TABLE content.pages ADD COLUMN IF NOT EXISTS seo JSONB;");
+            $this->pdo->exec("ALTER TABLE content.taxonomies ADD COLUMN IF NOT EXISTS seo JSONB;");
         } catch (\Throwable $e) {
             // Ignore if driver doesn't support ADD COLUMN IF NOT EXISTS
         }
@@ -305,6 +306,7 @@ class Module implements ModuleInterface
         $name = $category->getName();
         $slug = $category->getSlug();
         $description = $category->getDescription();
+        $seo = $category->getSeo() ? json_encode($category->getSeo()) : null;
 
         $stmt = $this->pdo->prepare("SELECT id FROM content.taxonomies WHERE source_term_id = :id");
         $stmt->execute(['id' => $termId]);
@@ -313,27 +315,29 @@ class Module implements ModuleInterface
         if (!$taxUuid) {
             $taxUuid = EventBuilder::generateUuidV7();
             $stmt = $this->pdo->prepare("
-                INSERT INTO content.taxonomies (id, source_term_id, taxonomy_type, slug, name, description, deleted_at, created_at, updated_at)
-                VALUES (:uuid, :id, 'category', :slug, :name, :description, NULL, NOW(), NOW())
+                INSERT INTO content.taxonomies (id, source_term_id, taxonomy_type, slug, name, description, seo, deleted_at, created_at, updated_at)
+                VALUES (:uuid, :id, 'category', :slug, :name, :description, :seo, NULL, NOW(), NOW())
             ");
             $stmt->execute([
                 'uuid' => $taxUuid,
                 'id' => $termId,
                 'slug' => $slug,
                 'name' => $name,
-                'description' => $description
+                'description' => $description,
+                'seo' => $seo
             ]);
         } else {
             $stmt = $this->pdo->prepare("
                 UPDATE content.taxonomies
-                SET slug = :slug, name = :name, description = :description, deleted_at = NULL, updated_at = NOW()
+                SET slug = :slug, name = :name, description = :description, seo = :seo, deleted_at = NULL, updated_at = NOW()
                 WHERE id = :uuid
             ");
             $stmt->execute([
                 'uuid' => $taxUuid,
                 'slug' => $slug,
                 'name' => $name,
-                'description' => $description
+                'description' => $description,
+                'seo' => $seo
             ]);
         }
     }

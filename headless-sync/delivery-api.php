@@ -51,6 +51,11 @@ if ($uri === 'api/v1/posts') {
         ");
         $stmt->execute(['post_id' => $post['id']]);
         $post['categories'] = $stmt->fetchAll();
+        foreach ($post['categories'] as &$cat) {
+            if (isset($cat['seo']) && is_string($cat['seo'])) {
+                $cat['seo'] = json_decode($cat['seo'], true);
+            }
+        }
 
         if (isset($post['seo']) && is_string($post['seo'])) {
             $post['seo'] = json_decode($post['seo'], true);
@@ -101,6 +106,11 @@ if ($uri === 'api/v1/posts') {
         ");
         $stmtCat->execute(['post_id' => $post['id']]);
         $post['categories'] = $stmtCat->fetchAll();
+        foreach ($post['categories'] as &$cat) {
+            if (isset($cat['seo']) && is_string($cat['seo'])) {
+                $cat['seo'] = json_decode($cat['seo'], true);
+            }
+        }
     }
 
     header("Content-Type: application/json");
@@ -162,6 +172,10 @@ if ($uri === 'api/v1/categories') {
             exit;
         }
 
+        if (isset($cat['seo']) && is_string($cat['seo'])) {
+            $cat['seo'] = json_decode($cat['seo'], true);
+        }
+
         header("Content-Type: application/json");
         echo json_encode($cat);
         exit;
@@ -170,6 +184,12 @@ if ($uri === 'api/v1/categories') {
     // List all active categories
     $stmt = $pdo->query("SELECT * FROM content.taxonomies WHERE deleted_at IS NULL ORDER BY name ASC");
     $cats = $stmt->fetchAll();
+
+    foreach ($cats as &$c) {
+        if (isset($c['seo']) && is_string($c['seo'])) {
+            $c['seo'] = json_decode($c['seo'], true);
+        }
+    }
 
     header("Content-Type: application/json");
     echo json_encode($cats);

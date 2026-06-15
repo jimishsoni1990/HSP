@@ -1,9 +1,39 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { api, Post } from "@/lib/api";
+import type { Metadata } from "next";
 
 interface CategoryPageProps {
   params: Promise<{ slug: string }>;
+}
+
+export async function generateMetadata({ params }: CategoryPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  
+  let categories = [];
+  try {
+    categories = await api.getCategories();
+  } catch (e) {
+    return { title: "Category Archive" };
+  }
+
+  const category = categories.find((c) => c.slug === slug);
+  if (!category) {
+    return { title: "Category Not Found" };
+  }
+
+  const seo = category.seo;
+
+  return {
+    title: seo?.meta_title || `${category.name} Archives`,
+    description: seo?.meta_description || category.description || undefined,
+    openGraph: {
+      title: seo?.og_title || seo?.meta_title || `${category.name} Archives`,
+      description: seo?.og_description || seo?.meta_description || category.description || undefined,
+      images: seo?.og_image ? [{ url: seo.og_image }] : [],
+      type: "website",
+    },
+  };
 }
 
 export default async function CategoryPage({ params }: CategoryPageProps) {

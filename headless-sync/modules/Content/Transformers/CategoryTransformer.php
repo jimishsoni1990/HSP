@@ -31,6 +31,7 @@ final class CategoryTransformer
             'slug'         => (string) ($payload['slug'] ?? ''),
             'name'         => (string) ($payload['name'] ?? ''),
             'description'  => (string) ($payload['description'] ?? ''),
+            'seo'          => $payload['seo'] ?? null,
         ]);
     }
 }

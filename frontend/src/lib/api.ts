@@ -7,6 +7,13 @@ export interface Category {
   description: string;
   created_at: string;
   updated_at: string;
+  seo?: {
+    meta_title?: string;
+    meta_description?: string;
+    og_title?: string;
+    og_description?: string;
+    og_image?: string;
+  };
 }
 
 export interface Post {

@@ -37,6 +37,9 @@ class Category implements CanonicalModelInterface
     /** @var string|null ISO-8601 soft-delete timestamp, null when active. */
     protected ?string $deletedAt;
 
+    /** @var array|null Extensible SEO metadata. */
+    protected ?array $seo;
+
     /** @var int Aggregate version for optimistic concurrency. */
     protected int $aggregateVersion;
 
@@ -65,6 +68,7 @@ class Category implements CanonicalModelInterface
         $this->createdAt        = $properties['createdAt'] ?? null;
         $this->updatedAt        = $properties['updatedAt'] ?? null;
         $this->deletedAt        = $properties['deletedAt'] ?? null;
+        $this->seo              = $properties['seo'] ?? null;
         $this->aggregateVersion = (int) ($properties['aggregateVersion'] ?? 1);
     }
 
@@ -110,6 +114,11 @@ class Category implements CanonicalModelInterface
         return $this->deletedAt;
     }
 
+    public function getSeo(): ?array
+    {
+        return $this->seo;
+    }
+
     // ── CanonicalModelInterface ─────────────────────────────────────────
 
     /**
@@ -126,6 +135,7 @@ class Category implements CanonicalModelInterface
             'createdAt'        => $this->createdAt,
             'updatedAt'        => $this->updatedAt,
             'deletedAt'        => $this->deletedAt,
+            'seo'              => $this->seo,
             'aggregateVersion' => $this->aggregateVersion,
         ];
     }

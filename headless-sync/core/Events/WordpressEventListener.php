@@ -37,6 +37,7 @@ class WordpressEventListener
 
         if (function_exists('add_filter')) {
             add_filter('hsp_sync_post_seo_data', [$this, 'defaultSeoMapping'], 10, 3);
+            add_filter('hsp_sync_term_seo_data', [$this, 'defaultTermSeoMapping'], 10, 3);
         }
     }
 
@@ -207,6 +208,18 @@ class WordpressEventListener
             'count' => $term->count,
         ];
 
+        $seoData = [
+            'meta_title'       => '',
+            'meta_description' => '',
+            'og_title'         => '',
+            'og_description'   => '',
+            'og_image'         => '',
+        ];
+        if (function_exists('apply_filters')) {
+            $seoData = apply_filters('hsp_sync_term_seo_data', $seoData, $termId, 'category');
+        }
+        $termData['seo'] = $seoData;
+
         $eventType = $update ? 'content.category.updated' : 'content.category.created';
 
         try {
@@ -238,5 +251,29 @@ class WordpressEventListener
         } catch (\Throwable $e) {
             // Log/handle error
         }
+    }
+
+    /**
+     * Default callback to extract term (category) SEO data from Yoast SEO option if active.
+     *
+     * @param array $seoData
+     * @param int $termId
+     * @param string $taxonomy
+     * @return array
+     */
+    public function defaultTermSeoMapping(array $seoData, int $termId, string $taxonomy): array
+    {
+        if (function_exists('get_option')) {
+            $taxMeta = get_option('wpseo_taxonomy_meta');
+            if ($taxMeta && isset($taxMeta[$taxonomy][$termId])) {
+                $termMeta = $taxMeta[$taxonomy][$termId];
+                $seoData['meta_title']       = $termMeta['wpseo_title'] ?? '';
+                $seoData['meta_description'] = $termMeta['wpseo_desc'] ?? '';
+                $seoData['og_title']         = $termMeta['wpseo_opengraph-title'] ?? '';
+                $seoData['og_description']   = $termMeta['wpseo_opengraph-description'] ?? '';
+                $seoData['og_image']         = $termMeta['wpseo_opengraph-image'] ?? '';
+            }
+        }
+        return $seoData;
     }
 }
