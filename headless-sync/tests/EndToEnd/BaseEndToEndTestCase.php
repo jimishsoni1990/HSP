@@ -124,8 +124,6 @@ abstract class BaseEndToEndTestCase extends TestCase
      */
     protected function runWpCli(array $args, string $cwd = null): Process
     {
-        $container = getenv('WP_CONTAINER_NAME') ?: 'hsp-wordpress';
-        
         // Automatically append --stop-when-empty for headless-sync worker runs in tests
         if (count($args) >= 2 && $args[0] === 'headless-sync' && in_array($args[1], ['worker', 'work'])) {
             if (!in_array('--stop-when-empty', $args)) {
@@ -133,7 +131,21 @@ abstract class BaseEndToEndTestCase extends TestCase
             }
         }
 
-        $cmd = array_merge(['docker', 'exec', $container, 'wp', '--allow-root'], $args);
+        $hasDocker = false;
+        try {
+            $checkProc = new Process(['docker', '--version']);
+            $checkProc->run();
+            $hasDocker = $checkProc->isSuccessful();
+        } catch (\Exception $e) {
+            $hasDocker = false;
+        }
+
+        if ($hasDocker) {
+            $container = getenv('WP_CONTAINER_NAME') ?: 'hsp-wordpress';
+            $cmd = array_merge(['docker', 'exec', $container, 'wp', '--allow-root'], $args);
+        } else {
+            $cmd = array_merge(['wp', '--allow-root'], $args);
+        }
 
         $process = new Process($cmd, $cwd);
         $process->setTimeout(30);
@@ -215,7 +227,12 @@ abstract class BaseEndToEndTestCase extends TestCase
             'content.pages',
             'content.taxonomies',
             'content.entity_taxonomies',
-            'content.media'
+            'content.media',
+            'content.products',
+            'content.product_attributes',
+            'content.product_variations',
+            'content.product_media',
+            'content.product_categories'
         ];
 
         foreach ($tables as $table) {

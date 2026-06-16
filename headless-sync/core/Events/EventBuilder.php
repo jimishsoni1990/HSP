@@ -111,4 +111,64 @@ class EventBuilder
             $termData
         );
     }
+
+    /**
+     * Build an EventEnvelope from WooCommerce Product data.
+     *
+     * @param array $productData
+     * @param string $eventType
+     * @param int $aggregateVersion
+     * @return EventEnvelope
+     */
+    public function buildFromProduct(array $productData, string $eventType, int $aggregateVersion): EventEnvelope
+    {
+        $now = new DateTime('now', new DateTimeZone('UTC'));
+        $nowIso = $now->format('Y-m-d\TH:i:s\Z');
+
+        $sourceUpdatedAt = $nowIso;
+        if (!empty($productData['post_modified_gmt']) && $productData['post_modified_gmt'] !== '0000-00-00 00:00:00') {
+            $sourceUpdatedAt = (new DateTime($productData['post_modified_gmt'], new DateTimeZone('UTC')))->format('Y-m-d\TH:i:s\Z');
+        }
+
+        return new EventEnvelope(
+            self::generateUuidV7(),
+            $eventType,
+            1, // event_version
+            'product', // aggregateType
+            (string) ($productData['ID'] ?? ''),
+            $aggregateVersion,
+            $sourceUpdatedAt,
+            $nowIso,
+            $productData
+        );
+    }
+
+    /**
+     * Build an EventEnvelope from WooCommerce Product Variation data.
+     *
+     * @param array $variationData
+     * @param string $eventType
+     * @param int $aggregateVersion
+     * @return EventEnvelope
+     */
+    public function buildFromVariation(array $variationData, string $eventType, int $aggregateVersion): EventEnvelope
+    {
+        $now = new DateTime('now', new DateTimeZone('UTC'));
+        $nowIso = $now->format('Y-m-d\TH:i:s\Z');
+
+        // Variations are updated at parent lifecycle or separately; default to now
+        $sourceUpdatedAt = $nowIso;
+
+        return new EventEnvelope(
+            self::generateUuidV7(),
+            $eventType,
+            1, // event_version
+            'product_variation', // aggregateType
+            (string) ($variationData['variation_id'] ?? ''),
+            $aggregateVersion,
+            $sourceUpdatedAt,
+            $nowIso,
+            $variationData
+        );
+    }
 }

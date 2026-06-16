@@ -1,0 +1,7 @@
+{
+    "name": "Commerce",
+    "version": "1.0.0",
+    "description": "WooCommerce catalog synchronization — Products, Variations, Attributes, and Media",
+    "namespace": "HSP\\Modules\\Commerce",
+    "entry": "Module.php"
+}

@@ -171,3 +171,53 @@ We implemented a plug-and-play SEO metadata sync engine using the **Bridge Adapt
 3. **Flexible PostgreSQL Schema**: Altered the `content.posts` and `content.pages` tables in PostgreSQL to add `seo JSONB` columns, enabling flexible query projections without core schema changes.
 4. **Next.js Dynamic Headers**: Integrated Next.js App Router `generateMetadata()` in both dynamic post routes (`posts/[slug]`) and static page routes (`pages/[slug]`). This reads the parsed JSONB fields and outputs crawler-friendly `<title>`, `<meta name="description">`, and Open Graph tags during server rendering.
 5. **E2E Verification**: Confirmed the Delivery API JSON payload contains the mapped `seo` keys and that the Next.js HTML output includes the resolved tags in the `<head>`.
+
+---
+
+## 🔔 Phase 11: On-Demand Cache Revalidation — Webhook Configuration Complete
+
+Completed the final wiring of the webhook system so all three environments (Docker, Local WP, CI) fire real HTTP purge requests to the Next.js frontend after every content change.
+
+### Files Changed
+
+| File | Change |
+|------|--------|
+| [frontend/.env.local](file:///j:/wp-postgresql/frontend/.env.local) | **Created** — `REVALIDATION_SECRET` + `NEXT_PUBLIC_DELIVERY_API_URL` for Next.js runtime |
+| [wp-config.php](file:///C:/Users/jimis/Local%20Sites/hsp/app/public/wp-config.php) | **Modified** — Added `putenv('REVALIDATION_SECRET=...')` + `putenv('REVALIDATION_URL=...')` so Local WP dev environment loads the vars into PHP |
+| [phpunit.xml.dist](file:///j:/wp-postgresql/headless-sync/tests/EndToEnd/phpunit.xml.dist) | **Modified** — Added `REVALIDATION_URL` + `REVALIDATION_SECRET` env vars so `RevalidationWebhookTest` can directly authenticate with the Next.js API route during E2E tests |
+
+### Architecture Summary
+
+```
+WordPress (hsp.local) ─── sync event ──▶ Worker Engine ──▶ Module.php::triggerRevalidation()
+                                                                         │
+                                                                         │  Non-blocking wp_remote_post
+                                                                         ▼
+                                                          Next.js /api/revalidate
+                                                          (validates REVALIDATION_SECRET)
+                                                                         │
+                                                                         ▼
+                                                          revalidatePath('/posts/{slug}')
+                                                          revalidatePath('/category/{slug}')
+                                                          revalidatePath('/')
+```
+
+### Smoke Test Results (all pass ✅)
+
+| Test | Expected | Result |
+|------|----------|--------|
+| GET `?path=/` (no secret) | 401 | ✅ 401 |
+| GET `?secret=wrongsecret&path=/` | 401 | ✅ 401 |
+| GET `?secret=valid` (no path) | 400 | ✅ 400 |
+| GET `?secret=valid&path=/posts/hello` | 200 `{revalidated:true}` | ✅ 200 |
+| POST JSON `{secret, path: "/category/news"}` | 200 `{revalidated:true}` | ✅ 200 |
+| POST query `?secret=valid&path=/posts/query` | 200 `{revalidated:true}` | ✅ 200 |
+
+### WooCommerce Compatibility Note
+
+Cart (`/cart`) and Checkout (`/checkout`) pages must be tagged with:
+```ts
+export const dynamic = 'force-dynamic';
+```
+This prevents them from being cached by ISR/Next.js cache and ensures `revalidatePath` calls from content changes never accidentally touch commerce pages.
+

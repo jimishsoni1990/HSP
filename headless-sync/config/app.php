@@ -6,5 +6,6 @@ return [
     'debug' => (bool)(getenv('APP_DEBUG') ?: false),
     'modules' => [
         \HSP\Modules\Content\Module::class,
+        \HSP\Modules\Commerce\Module::class,
     ],
 ];

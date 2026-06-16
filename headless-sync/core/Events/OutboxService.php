@@ -155,15 +155,114 @@ class OutboxService
     }
 
     /**
+     * Publish a WooCommerce product event.
+     *
+     * @param array $productData
+     * @param string $eventType
+     * @return EventEnvelope
+     * @throws Throwable
+     */
+    public function publishProduct(array $productData, string $eventType): EventEnvelope
+    {
+        try {
+            $this->pdo->beginTransaction();
+
+            $aggregateId = (string) ($productData['ID'] ?? '');
+            $aggregateType = 'product';
+
+            // 1. Get/Increment aggregate version atomically
+            $sql = "INSERT INTO system.aggregate_versions (aggregate_type, aggregate_id, version, updated_at)
+                    VALUES (:type, :id, 1, NOW())
+                    ON CONFLICT (aggregate_type, aggregate_id)
+                    DO UPDATE SET version = system.aggregate_versions.version + 1, updated_at = NOW()
+                    RETURNING version";
+
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->bindValue(':type', $aggregateType, PDO::PARAM_STR);
+            $stmt->bindValue(':id', $aggregateId, PDO::PARAM_STR);
+            $stmt->execute();
+            $version = (int) $stmt->fetchColumn();
+
+            // 2. Build envelope
+            $envelope = $this->builder->buildFromProduct($productData, $eventType, $version);
+
+            // 3. Save to system.events
+            $this->saveEvent($envelope);
+
+            // 4. Queue job under 'commerce' queue
+            $this->queueJob($envelope, 'commerce');
+
+            $this->pdo->commit();
+
+            return $envelope;
+        } catch (Throwable $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $e;
+        }
+    }
+
+    /**
+     * Publish a WooCommerce product variation event.
+     *
+     * @param array $variationData
+     * @param string $eventType
+     * @return EventEnvelope
+     * @throws Throwable
+     */
+    public function publishVariation(array $variationData, string $eventType): EventEnvelope
+    {
+        try {
+            $this->pdo->beginTransaction();
+
+            $aggregateId = (string) ($variationData['variation_id'] ?? '');
+            $aggregateType = 'product_variation';
+
+            // 1. Get/Increment aggregate version atomically
+            $sql = "INSERT INTO system.aggregate_versions (aggregate_type, aggregate_id, version, updated_at)
+                    VALUES (:type, :id, 1, NOW())
+                    ON CONFLICT (aggregate_type, aggregate_id)
+                    DO UPDATE SET version = system.aggregate_versions.version + 1, updated_at = NOW()
+                    RETURNING version";
+
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->bindValue(':type', $aggregateType, PDO::PARAM_STR);
+            $stmt->bindValue(':id', $aggregateId, PDO::PARAM_STR);
+            $stmt->execute();
+            $version = (int) $stmt->fetchColumn();
+
+            // 2. Build envelope
+            $envelope = $this->builder->buildFromVariation($variationData, $eventType, $version);
+
+            // 3. Save to system.events
+            $this->saveEvent($envelope);
+
+            // 4. Queue job under 'commerce' queue
+            $this->queueJob($envelope, 'commerce');
+
+            $this->pdo->commit();
+
+            return $envelope;
+        } catch (Throwable $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $e;
+        }
+    }
+
+    /**
      * Queue a job corresponding to the event.
      *
      * @param EventEnvelope $envelope
+     * @param string $queueName
      * @return void
      */
-    protected function queueJob(EventEnvelope $envelope): void
+    protected function queueJob(EventEnvelope $envelope, string $queueName = 'content'): void
     {
         $sql = "INSERT INTO system.queue_jobs (queue_name, event_id, payload, status, attempts, available_at, created_at, updated_at)
-                VALUES ('content', :event_id, :payload, 'queued', 0, NOW(), NOW(), NOW())";
+                VALUES (:queue_name, :event_id, :payload, 'queued', 0, NOW(), NOW(), NOW())";
 
         $jobPayload = [
             'event_id' => $envelope->getEventId(),
@@ -174,6 +273,7 @@ class OutboxService
         ];
 
         $stmt = $this->pdo->prepare($sql);
+        $stmt->bindValue(':queue_name', $queueName, PDO::PARAM_STR);
         $stmt->bindValue(':event_id', $envelope->getEventId(), PDO::PARAM_STR);
         $stmt->bindValue(':payload', json_encode($jobPayload), PDO::PARAM_STR);
         $stmt->execute();

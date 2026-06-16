@@ -61,6 +61,8 @@ services:
       HSP_DB_NAME: ${POSTGRES_DB}
       HSP_DB_USER: ${POSTGRES_USER}
       HSP_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      REVALIDATION_SECRET: ${REVALIDATION_SECRET}
+      REVALIDATION_URL: ${REVALIDATION_URL}
     volumes:
       - wordpress_data:/var/www/html
       - ./headless-sync:/var/www/html/wp-content/plugins/headless-sync
@@ -88,6 +90,8 @@ services:
       HSP_DB_NAME: ${POSTGRES_DB}
       HSP_DB_USER: ${POSTGRES_USER}
       HSP_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      REVALIDATION_SECRET: ${REVALIDATION_SECRET}
+      REVALIDATION_URL: ${REVALIDATION_URL}
     volumes:
       - wordpress_data:/var/www/html
       - ./headless-sync:/var/www/html/wp-content/plugins/headless-sync

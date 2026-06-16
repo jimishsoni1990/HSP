@@ -8,6 +8,7 @@ use HSP\Core\Contracts\ModuleInterface;
 use HSP\Core\Events\EventBuilder;
 use HSP\Core\Events\OutboxService;
 use HSP\Core\Events\WordpressEventListener;
+use HSP\Core\Events\WordpressProductEventListener;
 use HSP\Core\Admin\AdminDashboard;
 use HSP\Core\Queue\DatabaseQueueProvider;
 use HSP\Core\Contracts\QueueProviderInterface;
@@ -121,6 +122,7 @@ class Application extends Container
         $this->singleton(EventBuilder::class);
         $this->singleton(OutboxService::class);
         $this->singleton(WordpressEventListener::class);
+        $this->singleton(WordpressProductEventListener::class);
         $this->singleton(AdminDashboard::class);
 
         // Bind QueueProviderInterface
@@ -161,6 +163,7 @@ class Application extends Container
 
         // Register Wordpress hooks
         $this->make(WordpressEventListener::class)->registerHooks();
+        $this->make(WordpressProductEventListener::class)->registerHooks();
 
         // Register WP-Cron hook and custom schedule filter
         if (function_exists('add_filter')) {

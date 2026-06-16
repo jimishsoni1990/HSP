@@ -14,7 +14,7 @@ require_once $autoloader;
 // Auto-start PHP development server on port 9000 if not already running
 if (@fsockopen('127.0.0.1', 9000) === false) {
     $process = new \Symfony\Component\Process\Process([
-        'php',
+        PHP_BINARY,
         '-S',
         '0.0.0.0:9000',
         dirname(__DIR__, 2) . '/delivery-api.php'
